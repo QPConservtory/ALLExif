@@ -7,13 +7,14 @@ using System.Text;
 using System.Xml;
 using ClosedXML.Excel;
 using System.Data;
+using System.Diagnostics;
 
-namespace GPSExif
+namespace AllEXIF
 {
     class Program
     {
-        const string NO_ARGS = "Please enter arguments for source path and results path. Use GPSExif.exe -h for help";
-        const string HELP = @"Usage is: GPSExif.exe -s c:\pictures folder\ -d c:\report output path -k c:\kml output path  (folders in double quotes if there are spaces in the names)";
+        const string NO_ARGS = "Please enter arguments for source path and results path. Use AllEXIF.exe -h for help";
+        const string HELP = @"Usage is: AllEXIF.exe -s c:\pictures folder\ -d c:\report output path -k c:\kml output path  (folders in double quotes if there are spaces in the names)";
         const string PROCESSING = "Processing photos from {0} to {1}";
 
         static void Main(string[] args)
@@ -45,6 +46,7 @@ namespace GPSExif
             string dateTimeOriginal = string.Empty;
             string dateTimeDigitized = string.Empty;
             string gpsDateStamp = string.Empty;
+            List<string> headers = new List<string>();
 
             List<string> photos = new List<string>();
 
@@ -70,6 +72,23 @@ namespace GPSExif
                         try
                         {
                             ExifGPSLatLonTagCollection exif = new ExifGPSLatLonTagCollection(path.FullName);
+                            var proc = new Process
+                            {
+                                StartInfo = new ProcessStartInfo
+                                {
+                                    FileName = @"C:\Windows\exiftool.exe",
+                                    Arguments = string.Format(@"-g2 {0}", path),
+                                    UseShellExecute = false,
+                                    RedirectStandardOutput = true,
+                                    CreateNoWindow = true
+                                }
+                            };
+
+                            proc.Start();
+                            while (!proc.StandardOutput.EndOfStream)
+                            {
+                                //listBoxTopResults.Items.Add(proc.StandardOutput.ReadLine().Replace("  ", ""));
+                            }
 
                             if (exif.Count() >= 3)
                             {
@@ -181,13 +200,13 @@ namespace GPSExif
 
                     if (photos.Count > 0)
                     {
-                        string path3 = Path.Combine(kmlReportDestination.FullName, "Photo GPS Report.kml");
+                        string path3 = Path.Combine(kmlReportDestination.FullName, "EXIF Report.kml");
                         KML.Create(photos, path3);
                     }
 
                     using (XLWorkbook wb = new XLWorkbook())
                     {
-                        string path = Path.Combine(excelReportDestination.FullName, "Photo Location Report.xlsx");
+                        string path = Path.Combine(excelReportDestination.FullName, "EXIF Report.xlsx");
                         wb.Worksheets.Add(dtGPSData, "GPS");
                         wb.SaveAs(path);
                     }
